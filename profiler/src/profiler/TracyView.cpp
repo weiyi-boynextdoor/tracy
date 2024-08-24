@@ -786,7 +786,7 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
-    if( !m_staticView )
+    //if( !m_staticView )
     {
         if( ImGui::Button( ICON_FA_WIFI ) || m_forceConnectionPopup )
         {
