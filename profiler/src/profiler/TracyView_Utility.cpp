@@ -50,7 +50,10 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
         if( m_worker.HasZoneExtra( ev ) )
         {
             const auto custom_color = m_worker.GetZoneExtra( ev ).color.Val();
-            if( custom_color != 0 ) return custom_color | 0xFF000000;
+            if (custom_color != 0)
+            {
+                return custom_color | 0xFF000000;
+            }
         }
         const auto color = srcloc.color;
         if( color != 0 ) return color | 0xFF000000;

@@ -616,7 +616,7 @@ private:
 
         bool show = false;
         bool ignoreCase = false;
-        std::vector<int16_t> match;
+        std::vector<src_idx_t> match;
         unordered_flat_map<uint64_t, Group> groups;
         size_t processed;
         uint16_t groupId;
@@ -747,7 +747,7 @@ private:
         std::thread loadThread;
         BadVersionState badVer;
         char pattern[1024] = {};
-        std::vector<int16_t> match[2];
+        std::vector<src_idx_t> match[2];
         int selMatch[2] = { 0, 0 };
         bool logVal = false;
         bool logTime = true;

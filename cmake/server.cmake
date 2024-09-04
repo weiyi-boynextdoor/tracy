@@ -28,3 +28,7 @@ endif()
 if(NOT NO_PARALLEL_STL AND UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     target_link_libraries(TracyServer PRIVATE TracyTbb)
 endif()
+
+if(USE_32_BIT_SOURCE_LOCATION)
+    target_compile_definitions(TracyServer PUBLIC TRACY_USE_32_BIT_SOURCE_LOCATION)
+endif()

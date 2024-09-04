@@ -1138,7 +1138,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
     {
         struct ChildGroup
         {
-            int16_t srcloc;
+            src_idx_t srcloc;
             uint64_t t;
             Vector<uint32_t> v;
         };

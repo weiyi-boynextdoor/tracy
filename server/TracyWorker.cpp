@@ -366,7 +366,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
                 uint32_t idx = m_data.sourceLocationPayload.size();
                 m_data.sourceLocationPayloadMap.emplace( slptr, idx );
                 m_data.sourceLocationPayload.push_back( slptr );
-                key = -int16_t( idx + 1 );
+                key = -src_idx_t( idx + 1 );
 #ifndef TRACY_NO_STATISTICS
                 auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
                 m_data.srclocZonesLast.first = key;
@@ -380,7 +380,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             }
             else
             {
-                key = -int16_t( it->second + 1 );
+                key = -src_idx_t( it->second + 1 );
             }
 
             auto zone = AllocZoneEvent();
@@ -705,8 +705,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         }
         m_data.frames.Data()[i] = ptr;
     }
-    m_data.framesBase = m_data.frames.Data()[0];
-    assert( m_data.framesBase->name == 0 );
+    if( sz > 0 )
+    {
+        m_data.framesBase = m_data.frames.Data()[0];
+        assert( m_data.framesBase->name == 0 );
+    }
 
     unordered_flat_map<uint64_t, const char*> pointerMap;
 
@@ -780,7 +783,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     m_data.externalThreadCompress.Load( f );
 
     f.Read( sz );
-    if( sz > std::numeric_limits<int16_t>::max() )
+    if( sz > std::numeric_limits<src_idx_t>::max() )
     {
         s_loadProgress.total.store( 0, std::memory_order_relaxed );
         char buf[256];
@@ -803,7 +806,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     const auto sle = sz;
 
     f.Read( sz );
-    if( sz > std::numeric_limits<int16_t>::max() )
+    if( sz > std::numeric_limits<src_idx_t>::max() )
     {
         s_loadProgress.total.store( 0, std::memory_order_relaxed );
         char buf[256];
@@ -817,7 +820,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         f.Read( srcloc, sizeof( SourceLocationBase ) );
         srcloc->namehash = 0;
         m_data.sourceLocationPayload[i] = srcloc;
-        m_data.sourceLocationPayloadMap.emplace( srcloc, int16_t( i ) );
+        m_data.sourceLocationPayloadMap.emplace( srcloc, src_idx_t( i ) );
     }
 
 #ifndef TRACY_NO_STATISTICS
@@ -826,7 +829,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        int16_t id;
+        src_idx_t id;
         uint64_t cnt;
         f.Read2( id, cnt );
         auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
@@ -848,7 +851,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        int16_t id;
+        src_idx_t id;
         f.Read( id );
         f.Skip( sizeof( uint64_t ) );
         m_data.sourceLocationZonesCnt.emplace( id, 0 );
@@ -1654,9 +1657,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread );
                     if( zone.HasChildren() )
                     {
-                        countMap[uint16_t(zone.SrcLoc())]++;
+                        countMap[u_src_idx_t(zone.SrcLoc())]++;
                         ProcessTimeline( countMap, GetZoneChildrenMutable( zone.Child() ), thread );
-                        countMap[uint16_t(zone.SrcLoc())]--;
+                        countMap[u_src_idx_t(zone.SrcLoc())]--;
                     }
                 }
             };
@@ -2435,7 +2438,7 @@ bool Worker::IsThreadFiber( uint64_t id )
     return td && ( td->isFiber );
 }
 
-const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
+const SourceLocation& Worker::GetSourceLocation( src_idx_t srcloc ) const
 {
     if( srcloc < 0 )
     {
@@ -2521,9 +2524,9 @@ static bool strstr_nocase( const char* l, const char* r )
     return strstr( ll, rl ) != nullptr;
 }
 
-std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
+std::vector<src_idx_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
 {
-    std::vector<int16_t> match;
+    std::vector<src_idx_t> match;
 
     const auto sz = m_data.sourceLocationExpand.size();
     for( size_t i=1; i<sz; i++ )
@@ -2543,7 +2546,7 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
         }
         if( found )
         {
-            match.push_back( (int16_t)i );
+            match.push_back( (src_idx_t)i );
         }
     }
 
@@ -2563,7 +2566,7 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
         {
             auto it = m_data.sourceLocationPayloadMap.find( (const SourceLocation*)srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );
-            match.push_back( -int16_t( it->second + 1 ) );
+            match.push_back( -src_idx_t( it->second + 1 ) );
         }
     }
 
@@ -2571,7 +2574,7 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
 }
 
 #ifndef TRACY_NO_STATISTICS
-Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc )
+Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( src_idx_t srcloc )
 {
     assert( AreSourceLocationZonesReady() );
     static SourceLocationZones empty;
@@ -2579,7 +2582,7 @@ Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc )
     return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
 
-const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc ) const
+const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( src_idx_t srcloc ) const
 {
     assert( AreSourceLocationZonesReady() );
     static const SourceLocationZones empty;
@@ -2916,7 +2919,7 @@ bool Worker::IsCallstackRetrieved( uint32_t callstack )
     return true;
 }
 
-bool Worker::IsSourceLocationRetrieved( int16_t srcloc )
+bool Worker::IsSourceLocationRetrieved( src_idx_t srcloc )
 {
     auto& sl = GetSourceLocation( srcloc );
     auto func = GetString( sl.function );
@@ -3279,7 +3282,7 @@ void Worker::NewSourceLocation( uint64_t ptr )
 {
     static const SourceLocation emptySourceLocation = {};
 
-    if( m_data.sourceLocation.size() > std::numeric_limits<int16_t>::max() )
+    if( m_data.sourceLocation.size() > std::numeric_limits<src_idx_t>::max() )
     {
         SourceLocationOverflowFailure();
         return;
@@ -3292,7 +3295,7 @@ void Worker::NewSourceLocation( uint64_t ptr )
     Query( ServerQuerySourceLocation, ptr );
 }
 
-int16_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
+src_idx_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
 {
     auto it = m_sourceLocationShrink.find( srcloc );
     if( it != m_sourceLocationShrink.end() )
@@ -3307,10 +3310,10 @@ int16_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
     }
 }
 
-int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
+src_idx_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
-    assert( m_data.sourceLocationExpand.size() < std::numeric_limits<int16_t>::max() );
-    const auto sz = int16_t( m_data.sourceLocationExpand.size() );
+    assert( m_data.sourceLocationExpand.size() < std::numeric_limits<src_idx_t>::max() );
+    const auto sz = src_idx_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
     auto res = m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
@@ -3400,7 +3403,7 @@ ThreadData* Worker::GetCurrentThreadData()
 }
 
 #ifndef TRACY_NO_STATISTICS
-Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc )
+Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( u_src_idx_t srcloc )
 {
     auto it = m_data.sourceLocationZones.find( srcloc );
     assert( it != m_data.sourceLocationZones.end() );
@@ -3409,7 +3412,7 @@ Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc
     return &it->second;
 }
 
-Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
+Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( u_src_idx_t srcloc )
 {
     auto it = m_data.gpuSourceLocationZones.find( srcloc );
     if( it == m_data.gpuSourceLocationZones.end() )
@@ -3421,7 +3424,7 @@ Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t 
     return &it->second;
 }
 #else
-uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
+uint64_t* Worker::GetSourceLocationZonesCntReal( u_src_idx_t srcloc )
 {
     auto it = m_data.sourceLocationZonesCnt.find( srcloc );
     assert( it != m_data.sourceLocationZonesCnt.end() );
@@ -3430,7 +3433,7 @@ uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
     return &it->second;
 }
 
-uint64_t* Worker::GetGpuSourceLocationZonesCntReal( uint16_t srcloc )
+uint64_t* Worker::GetGpuSourceLocationZonesCntReal( u_src_idx_t srcloc )
 {
     auto it = m_data.gpuSourceLocationZonesCnt.find( srcloc );
     if( it == m_data.gpuSourceLocationZonesCnt.end() )
@@ -3670,19 +3673,19 @@ void Worker::AddSourceLocationPayload( const char* data, size_t sz )
         auto slptr = m_slab.Alloc<SourceLocation>();
         memcpy( slptr, &srcloc, sizeof( srcloc ) );
         uint32_t idx = m_data.sourceLocationPayload.size();
-        if( idx+1 > std::numeric_limits<int16_t>::max() )
+        if( idx+1 > std::numeric_limits<src_idx_t>::max() )
         {
             SourceLocationOverflowFailure();
             return;
         }
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
-        m_pendingSourceLocationPayload = -int16_t( idx + 1 );
+        m_pendingSourceLocationPayload = -src_idx_t( idx + 1 );
         m_data.sourceLocationPayload.push_back( slptr );
         if( m_checkedFileStrings.find( srcloc.file ) == m_checkedFileStrings.end() )
         {
             CacheSource( srcloc.file );
         }
-        const auto key = -int16_t( idx + 1 );
+        const auto key = -src_idx_t( idx + 1 );
 #ifndef TRACY_NO_STATISTICS
         auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
         m_data.srclocZonesLast.first = key;
@@ -3695,7 +3698,7 @@ void Worker::AddSourceLocationPayload( const char* data, size_t sz )
     }
     else
     {
-        m_pendingSourceLocationPayload = -int16_t( it->second + 1 );
+        m_pendingSourceLocationPayload = -src_idx_t( it->second + 1 );
     }
 }
 
@@ -7483,7 +7486,7 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
 
-        if( countMap[uint16_t(zone.SrcLoc())] == 0 )
+        if( countMap[u_src_idx_t(zone.SrcLoc())] == 0 )
         {
             slz.nonReentrantCount++;
             if( slz.nonReentrantMin > timeSpan ) slz.nonReentrantMin = timeSpan;
@@ -7566,7 +7569,7 @@ int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, u
     auto zone = vec.begin();
     auto end = vec.end() - 1;
 
-    int16_t srcloc;
+    src_idx_t srcloc;
     int64_t tstart, tend;
     uint32_t childSz, extra;
     f.Read4( srcloc, tstart, extra, childSz );
@@ -7613,7 +7616,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
     do
     {
         int64_t tcpu, tgpu;
-        int16_t srcloc;
+        src_idx_t srcloc;
         uint16_t thread;
         uint64_t childSz;
         f.Read6( tcpu, tgpu, srcloc, zone->callstack, thread, childSz );
@@ -7811,7 +7814,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationZones )
     {
-        int16_t id = v.first;
+        src_idx_t id = v.first;
         uint64_t cnt = v.second.zones.size();
         f.Write( &id, sizeof( id ) );
         f.Write( &cnt, sizeof( cnt ) );
@@ -7831,7 +7834,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationZonesCnt )
     {
-        int16_t id = v.first;
+        src_idx_t id = v.first;
         uint64_t cnt = v.second;
         f.Write( &id, sizeof( id ) );
         f.Write( &cnt, sizeof( cnt ) );
@@ -7871,7 +7874,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         for( auto& lev : v.second->timeline )
         {
             WriteTimeOffset( f, refTime, lev.ptr->Time() );
-            const int16_t srcloc = lev.ptr->SrcLoc();
+            const src_idx_t srcloc = lev.ptr->SrcLoc();
             f.Write( &srcloc, sizeof( srcloc ) );
             f.Write( &lev.ptr->thread, sizeof( lev.ptr->thread ) );
             f.Write( &lev.ptr->type, sizeof( lev.ptr->type ) );
@@ -8288,7 +8291,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
     for( auto& val : vec )
     {
         auto& v = a(val);
-        int16_t srcloc = v.SrcLoc();
+        src_idx_t srcloc = v.SrcLoc();
         f.Write( &srcloc, sizeof( srcloc ) );
         int64_t start = v.Start();
         WriteTimeOffset( f, refTime, start );
@@ -8329,7 +8332,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
         auto& v = a(val);
         WriteTimeOffset( f, refTime, v.CpuStart() );
         WriteTimeOffset( f, refGpuTime, v.GpuStart() );
-        const int16_t srcloc = v.SrcLoc();
+        const src_idx_t srcloc = v.SrcLoc();
         f.Write( &srcloc, sizeof( srcloc ) );
         f.Write( &v.callstack, sizeof( v.callstack ) );
         const uint16_t thread = v.Thread();
