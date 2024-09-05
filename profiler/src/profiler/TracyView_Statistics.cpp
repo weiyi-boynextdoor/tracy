@@ -103,7 +103,7 @@ void View::DrawStatistics()
             return;
         }
 
-        const auto filterActive = m_statisticsFilter.IsActive();
+        const auto filterActive = m_statisticsNameFilter.IsActive() || m_statisticsFileFilter.IsActive();
         auto& slz = m_worker.GetSourceLocationZones();
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
@@ -168,7 +168,8 @@ void View::DrawStatistics()
                         slzcnt++;
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
-                        if( m_statisticsFilter.PassFilter( name ) )
+                        auto file = m_worker.GetString( sl.file );
+                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter(file))
                         {
                             auto cit = m_statCache.find( it->first );
                             if( cit != m_statCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
@@ -249,7 +250,8 @@ void View::DrawStatistics()
                     {
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
-                        if( m_statisticsFilter.PassFilter( name ) )
+                        auto file = m_worker.GetString( sl.file );
+                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter( file ) )
                         {
                             srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
                         }
@@ -326,7 +328,7 @@ void View::DrawStatistics()
             return;
         }
 
-        const auto filterActive = m_statisticsFilter.IsActive();
+        const auto filterActive = m_statisticsNameFilter.IsActive();
         auto& slz = m_worker.GetGpuSourceLocationZones();
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
@@ -379,7 +381,7 @@ void View::DrawStatistics()
                         slzcnt++;
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
-                        if( m_statisticsFilter.PassFilter( name ) )
+                        if( m_statisticsNameFilter.PassFilter( name ) )
                         {
                             auto cit = m_gpuStatCache.find( it->first );
                             if( cit != m_gpuStatCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
@@ -433,7 +435,7 @@ void View::DrawStatistics()
                     {
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
-                        if( m_statisticsFilter.PassFilter( name ) )
+                        if( m_statisticsNameFilter.PassFilter( name ) )
                         {
                             srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, count, total } );
                         }
@@ -455,11 +457,22 @@ void View::DrawStatistics()
     ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( "Name" );
     ImGui::SameLine();
-    m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
+    m_statisticsNameFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
     {
-        m_statisticsFilter.Clear();
+        m_statisticsNameFilter.Clear();
+    }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    // ImGui::AlignTextToFramePadding();
+    TextDisabledUnformatted( "File" );
+    ImGui::SameLine();
+    m_statisticsFileFilter.Draw( ICON_FA_FILTER "###fileFilter", 200 );
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###file" ) )
+    {
+        m_statisticsFileFilter.Clear();
     }
     ImGui::SameLine();
     ImGui::Spacing();
@@ -782,13 +795,13 @@ void View::DrawStatistics()
         if( m_showAllSymbols )
         {
             data.reserve( symMap.size() );
-            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
+            if( m_statisticsNameFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
             {
                 for( auto& v : symMap )
                 {
                     const auto name = m_worker.GetString( v.second.name );
                     const auto image = m_worker.GetString( v.second.imageName );
-                    bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
+                    bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsNameFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
                     if( !pass && v.second.size.Val() == 0 )
                     {
                         const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -798,7 +811,7 @@ void View::DrawStatistics()
                             if( pit != symMap.end() )
                             {
                                 const auto parentName = m_worker.GetString( pit->second.name );
-                                pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
+                                pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsNameFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
                             }
                         }
                     }
@@ -885,7 +898,7 @@ void View::DrawStatistics()
         else
         {
             data.reserve( symStat.size() );
-            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
+            if( m_statisticsNameFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
             {
                 for( auto& v : symStat )
                 {
@@ -894,7 +907,7 @@ void View::DrawStatistics()
                     {
                         const auto name = m_worker.GetString( sit->second.name );
                         const auto image = m_worker.GetString( sit->second.imageName );
-                        bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
+                        bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsNameFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
                         if( !pass && sit->second.size.Val() == 0 )
                         {
                             const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -904,7 +917,7 @@ void View::DrawStatistics()
                                 if( pit != symMap.end() )
                                 {
                                     const auto parentName = m_worker.GetString( pit->second.name );
-                                    pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
+                                    pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsNameFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
                                 }
                             }
                         }
