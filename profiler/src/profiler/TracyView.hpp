@@ -467,7 +467,8 @@ private:
     bool m_reactToCrash = false;
     bool m_reactToLostConnection = false;
 
-    ImGuiTextFilter m_statisticsFilter;
+    ImGuiTextFilter m_statisticsNameFilter;
+    ImGuiTextFilter m_statisticsFileFilter;
     ImGuiTextFilter m_statisticsImageFilter;
     ImGuiTextFilter m_userTextFilter;
     unordered_flat_set<Worker::ZoneThreadData*> m_filteredZones;
