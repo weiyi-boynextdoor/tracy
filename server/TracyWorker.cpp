@@ -1670,9 +1670,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                     if( !t->timeline.empty() )
                     {
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+                        // currently, dynamic source location is not allowed because of negative index
+                        std::vector<uint8_t> countMap(m_data.sourceLocationZones.size());
+                        ProcessTimeline( countMap.data(), t->timeline,
+                                         m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+#else
                         uint8_t countMap[64*1024];
                         // Don't touch thread compression cache in a thread.
-                        ProcessTimeline( countMap, t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+                        ProcessTimeline( countMap, t->timeline,
+                                         m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+#endif
                     }
                 }
                 std::lock_guard<std::mutex> lock( m_data.lock );
@@ -7485,7 +7493,6 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
-
         if( countMap[u_src_idx_t(zone.SrcLoc())] == 0 )
         {
             slz.nonReentrantCount++;
