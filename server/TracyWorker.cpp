@@ -840,7 +840,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        int16_t id;
+        src_idx_t id;
         uint64_t cnt;
         f.Read2( id, cnt );
         auto status = m_data.gpuSourceLocationZones.emplace( id, GpuSourceLocationZones() );
@@ -860,7 +860,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        int16_t id;
+        src_idx_t id;
         f.Read( id );
         f.Skip( sizeof( uint64_t ) );
         m_data.gpuSourceLocationZonesCnt.emplace( id, 0 );

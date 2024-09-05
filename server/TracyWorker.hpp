@@ -310,11 +310,11 @@ private:
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<src_idx_t, SourceLocationZones> sourceLocationZones;
         bool sourceLocationZonesReady = false;
-        unordered_flat_map<int16_t, GpuSourceLocationZones> gpuSourceLocationZones;
+        unordered_flat_map<src_idx_t, GpuSourceLocationZones> gpuSourceLocationZones;
         bool gpuSourceLocationZonesReady = false;
 #else
         unordered_flat_map<src_idx_t, uint64_t> sourceLocationZonesCnt;
-        unordered_flat_map<int16_t, uint64_t> gpuSourceLocationZonesCnt;
+        unordered_flat_map<src_idx_t, uint64_t> gpuSourceLocationZonesCnt;
 #endif
 
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
@@ -381,10 +381,10 @@ private:
         std::pair<uint64_t, u_src_idx_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
 #ifndef TRACY_NO_STATISTICS
         std::pair<u_src_idx_t, SourceLocationZones*> srclocZonesLast = std::make_pair( 0, nullptr );
-        std::pair<uint16_t, GpuSourceLocationZones*> gpuZonesLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, GpuSourceLocationZones*> gpuZonesLast = std::make_pair( 0, nullptr );
 #else
         std::pair<u_src_idx_t, uint64_t*> srclocCntLast = std::make_pair( 0, nullptr );
-        std::pair<uint16_t, uint64_t*> gpuCntLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, uint64_t*> gpuCntLast = std::make_pair( 0, nullptr );
 #endif
 
 #ifndef TRACY_NO_STATISTICS
@@ -610,7 +610,7 @@ public:
     SourceLocationZones& GetZonesForSourceLocation( src_idx_t srcloc );
     const SourceLocationZones& GetZonesForSourceLocation( src_idx_t srcloc ) const;
     const unordered_flat_map<src_idx_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
-    const unordered_flat_map<int16_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
+    const unordered_flat_map<src_idx_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
     bool AreGpuSourceLocationZonesReady() const { return m_data.gpuSourceLocationZonesReady; }
     bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }

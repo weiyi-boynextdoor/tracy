@@ -1594,12 +1594,12 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
     {
         struct ChildGroup
         {
-            int16_t srcloc;
+            src_idx_t srcloc;
             uint64_t t;
             Vector<uint32_t> v;
         };
         uint64_t ctime = 0;
-        unordered_flat_map<int16_t, ChildGroup> cmap;
+        unordered_flat_map<src_idx_t, ChildGroup> cmap;
         cmap.reserve( 128 );
         for( size_t i=0; i<children.size(); i++ )
         {
