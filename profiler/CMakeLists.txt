@@ -7,6 +7,7 @@ option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -m
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)
 option(NO_PARALLEL_STL "Disable parallel STL" OFF)
+option(USE_32_BIT_SOURCE_LOCATION "Use int32_t instead of int16_t as source location index, to accommodate massive source locations" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

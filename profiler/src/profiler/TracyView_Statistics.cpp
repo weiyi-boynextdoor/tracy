@@ -12,7 +12,7 @@ extern double s_time;
 
 struct SrcLocZonesSlim
 {
-    int16_t srcloc;
+    src_idx_t srcloc;
     uint16_t numThreads;
     size_t numZones;
     int64_t total;

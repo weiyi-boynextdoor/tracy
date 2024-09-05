@@ -198,25 +198,51 @@ struct SourceLocation : public SourceLocationBase
 
 enum { SourceLocationSize = sizeof( SourceLocation ) };
 
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+using src_idx_t = int32_t;
+using u_src_idx_t = uint32_t;
+#else
+using src_idx_t = int16_t;
+using u_src_idx_t = uint16_t;
+#endif
 
 struct ZoneEvent
 {
     tracy_force_inline ZoneEvent() {};
 
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    tracy_force_inline int64_t Start() const { return _start; }
+    tracy_force_inline void SetStart( int64_t start ) { _start = start; }
+#else
     tracy_force_inline int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 4 ); memcpy( ((char*)&_start_srcloc)+6, ((char*)&start)+4, 2 ); }
+#endif
     tracy_force_inline int64_t End() const { return int64_t( _end_child1 ) >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 4 ); memcpy( ((char*)&_end_child1)+6, ((char*)&end)+4, 2 ); }
     tracy_force_inline bool IsEndValid() const { return ( _end_child1 >> 63 ) == 0; }
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    tracy_force_inline src_idx_t SrcLoc() const { return _srcloc; }
+    tracy_force_inline void SetSrcLoc( src_idx_t srcloc ) { _srcloc = srcloc; }
+    tracy_force_inline void SetStartSrcLoc( int64_t start, src_idx_t srcloc )
+    { 
+        _start = start;
+        _srcloc = srcloc; 
+    }
+#else
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
+    tracy_force_inline void SetStartSrcLoc( int64_t start, int16_t srcloc ) { assert( start < (int64_t)( 1ull << 47 ) ); start <<= 16; start |= uint16_t( srcloc ); memcpy( &_start_srcloc, &start, 8 ); }
+#endif
     tracy_force_inline int32_t Child() const { int32_t child; memcpy( &child, &_child2, 4 ); return child; }
     tracy_force_inline void SetChild( int32_t child ) { memcpy( &_child2, &child, 4 ); }
     tracy_force_inline bool HasChildren() const { uint8_t tmp; memcpy( &tmp, ((char*)&_end_child1)+1, 1 ); return ( tmp >> 7 ) == 0; }
 
-    tracy_force_inline void SetStartSrcLoc( int64_t start, int16_t srcloc ) { assert( start < (int64_t)( 1ull << 47 ) ); start <<= 16; start |= uint16_t( srcloc ); memcpy( &_start_srcloc, &start, 8 ); }
-
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    uint64_t _start;
+    src_idx_t _srcloc;
+#else
     uint64_t _start_srcloc;
+#endif
     uint16_t _child2;
     uint64_t _end_child1;
     uint32_t extra;
@@ -323,12 +349,24 @@ struct LockEvent
         ReleaseShared
     };
 
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    tracy_force_inline int64_t Time() const { return _time; }
+    tracy_force_inline void SetTime( int64_t time ) { _time = time; }
+    tracy_force_inline src_idx_t SrcLoc() const { return _srcloc; }
+    tracy_force_inline void SetSrcLoc( src_idx_t srcloc ) { _srcloc = srcloc; }
+#else
     tracy_force_inline int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
     tracy_force_inline void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_srcloc)+2, &time, 4 ); memcpy( ((char*)&_time_srcloc)+6, ((char*)&time)+4, 2 ); }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_time_srcloc, &srcloc, 2 ); }
+#endif
 
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    uint64_t _time;
+    src_idx_t _srcloc;
+#else
     uint64_t _time_srcloc;
+#endif
     uint8_t thread;
     Type type;
 };
@@ -366,7 +404,7 @@ struct LockMap
     };
 
     StringIdx customName;
-    int16_t srcloc;
+    src_idx_t srcloc;
     Vector<LockEventPtr> timeline;
     unordered_flat_map<uint64_t, uint8_t> threadMap;
     std::vector<uint64_t> threadList;
@@ -392,22 +430,37 @@ struct LockHighlight
 
 struct GpuEvent
 {
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    tracy_force_inline int64_t CpuStart() const { return _cpuStart; }
+    tracy_force_inline void SetCpuStart( int64_t cpuStart ) { _cpuStart = cpuStart; }
+#else
     tracy_force_inline int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
     tracy_force_inline void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 4 ); memcpy( ((char*)&_cpuStart_srcloc)+6, ((char*)&cpuStart)+4, 2 ); }
+#endif
     tracy_force_inline int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
     tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
     tracy_force_inline int64_t GpuStart() const { return int64_t( _gpuStart_child1 ) >> 16; }
     tracy_force_inline void SetGpuStart( int64_t gpuStart ) { /*assert( gpuStart < (int64_t)( 1ull << 47 ) );*/ memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 ); memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 ); }
     tracy_force_inline int64_t GpuEnd() const { return int64_t( _gpuEnd_child2 ) >> 16; }
     tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) { assert( gpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuEnd_child2)+2, &gpuEnd, 4 ); memcpy( ((char*)&_gpuEnd_child2)+6, ((char*)&gpuEnd)+4, 2 ); }
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    tracy_force_inline src_idx_t SrcLoc() const { return _srcloc; }
+    tracy_force_inline void SetSrcLoc( src_idx_t srcloc ) { _srcloc = srcloc; }
+#else
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
+#endif
     tracy_force_inline uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
     tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _gpuStart_child1 & 0xFFFF ) | ( uint32_t( _gpuEnd_child2 & 0xFFFF ) << 16 ) ); }
     tracy_force_inline void SetChild( int32_t child ) { memcpy( &_gpuStart_child1, &child, 2 ); memcpy( &_gpuEnd_child2, ((char*)&child)+2, 2 ); }
 
+#ifdef TRACY_USE_32_BIT_SOURCE_LOCATION
+    uint64_t _cpuStart;
+    src_idx_t _srcloc;
+#else
     uint64_t _cpuStart_srcloc;
+#endif
     uint64_t _cpuEnd_thread;
     uint64_t _gpuStart_child1;
     uint64_t _gpuEnd_child2;

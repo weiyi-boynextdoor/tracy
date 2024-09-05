@@ -305,16 +305,16 @@ private:
 
         unordered_flat_map<uint64_t, SourceLocation> sourceLocation;
         Vector<short_ptr<SourceLocation>> sourceLocationPayload;
-        unordered_flat_map<const SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
+        unordered_flat_map<const SourceLocation*, src_idx_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
-        unordered_flat_map<int16_t, SourceLocationZones> sourceLocationZones;
+        unordered_flat_map<src_idx_t, SourceLocationZones> sourceLocationZones;
         bool sourceLocationZonesReady = false;
-        unordered_flat_map<int16_t, GpuSourceLocationZones> gpuSourceLocationZones;
+        unordered_flat_map<src_idx_t, GpuSourceLocationZones> gpuSourceLocationZones;
         bool gpuSourceLocationZonesReady = false;
 #else
-        unordered_flat_map<int16_t, uint64_t> sourceLocationZonesCnt;
-        unordered_flat_map<int16_t, uint64_t> gpuSourceLocationZonesCnt;
+        unordered_flat_map<src_idx_t, uint64_t> sourceLocationZonesCnt;
+        unordered_flat_map<src_idx_t, uint64_t> gpuSourceLocationZonesCnt;
 #endif
 
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
@@ -378,13 +378,13 @@ private:
         std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         uint64_t checkSrclocLast = 0;
-        std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
+        std::pair<uint64_t, u_src_idx_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
 #ifndef TRACY_NO_STATISTICS
-        std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( 0, nullptr );
-        std::pair<uint16_t, GpuSourceLocationZones*> gpuZonesLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, SourceLocationZones*> srclocZonesLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, GpuSourceLocationZones*> gpuZonesLast = std::make_pair( 0, nullptr );
 #else
-        std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( 0, nullptr );
-        std::pair<uint16_t, uint64_t*> gpuCntLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, uint64_t*> srclocCntLast = std::make_pair( 0, nullptr );
+        std::pair<u_src_idx_t, uint64_t*> gpuCntLast = std::make_pair( 0, nullptr );
 #endif
 
 #ifndef TRACY_NO_STATISTICS
@@ -420,7 +420,7 @@ private:
     struct FailureData
     {
         uint64_t thread;
-        int16_t srcloc;
+        src_idx_t srcloc;
         uint32_t callstack;
         std::string message;
     };
@@ -584,7 +584,7 @@ public:
     const char* GetThreadName( uint64_t id ) const;
     bool IsThreadLocal( uint64_t id );
     bool IsThreadFiber( uint64_t id );
-    const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
+    const SourceLocation& GetSourceLocation( src_idx_t srcloc ) const;
     std::pair<const char*, const char*> GetExternalName( uint64_t id ) const;
 
     const char* GetZoneName( const SourceLocation& srcloc ) const;
@@ -602,15 +602,15 @@ public:
     tracy_force_inline const bool HasZoneExtra( const ZoneEvent& ev ) const { return ev.extra != 0; }
     tracy_force_inline const ZoneExtra& GetZoneExtra( const ZoneEvent& ev ) const { return m_data.zoneExtra[ev.extra]; }
 
-    std::vector<int16_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
+    std::vector<src_idx_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
     const unordered_flat_map<uint64_t, SymbolData>& GetSymbolMap() const { return m_data.symbolMap; }
 
 #ifndef TRACY_NO_STATISTICS
-    SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc );
-    const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
-    const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
-    const unordered_flat_map<int16_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
+    SourceLocationZones& GetZonesForSourceLocation( src_idx_t srcloc );
+    const SourceLocationZones& GetZonesForSourceLocation( src_idx_t srcloc ) const;
+    const unordered_flat_map<src_idx_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
+    const unordered_flat_map<src_idx_t, GpuSourceLocationZones>& GetGpuSourceLocationZones() const { return m_data.gpuSourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
     bool AreGpuSourceLocationZonesReady() const { return m_data.gpuSourceLocationZonesReady; }
     bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }
@@ -806,13 +806,13 @@ private:
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
-    tracy_force_inline int16_t ShrinkSourceLocation( uint64_t srcloc )
+    tracy_force_inline src_idx_t ShrinkSourceLocation( uint64_t srcloc )
     {
         if( m_data.shrinkSrclocLast.first == srcloc ) return m_data.shrinkSrclocLast.second;
         return ShrinkSourceLocationReal( srcloc );
     }
-    int16_t ShrinkSourceLocationReal( uint64_t srcloc );
-    int16_t NewShrinkedSourceLocation( uint64_t srcloc );
+    src_idx_t ShrinkSourceLocationReal( uint64_t srcloc );
+    src_idx_t NewShrinkedSourceLocation( uint64_t srcloc );
 
     tracy_force_inline void MemAllocChanged( MemData& memdata, int64_t time );
     void CreateMemAllocPlot( MemData& memdata );
@@ -837,33 +837,33 @@ private:
     tracy_force_inline ThreadData* GetCurrentThreadData();
 
 #ifndef TRACY_NO_STATISTICS
-    SourceLocationZones* GetSourceLocationZones( uint16_t srcloc )
+    SourceLocationZones* GetSourceLocationZones( u_src_idx_t srcloc )
     {
         if( m_data.srclocZonesLast.first == srcloc ) return m_data.srclocZonesLast.second;
         return GetSourceLocationZonesReal( srcloc );
     }
-    SourceLocationZones* GetSourceLocationZonesReal( uint16_t srcloc );
+    SourceLocationZones* GetSourceLocationZonesReal( u_src_idx_t srcloc );
 
     GpuSourceLocationZones* GetGpuSourceLocationZones( uint16_t srcloc )
     {
         if( m_data.gpuZonesLast.first == srcloc ) return m_data.gpuZonesLast.second;
         return GetGpuSourceLocationZonesReal( srcloc );
     }
-    GpuSourceLocationZones* GetGpuSourceLocationZonesReal( uint16_t srcloc );
+    GpuSourceLocationZones* GetGpuSourceLocationZonesReal( u_src_idx_t srcloc );
 #else
-    uint64_t* GetSourceLocationZonesCnt( uint16_t srcloc )
+    uint64_t* GetSourceLocationZonesCnt( u_src_idx_t srcloc )
     {
         if( m_data.srclocCntLast.first == srcloc ) return m_data.srclocCntLast.second;
         return GetSourceLocationZonesCntReal( srcloc );
     }
-    uint64_t* GetSourceLocationZonesCntReal( uint16_t srcloc );
+    uint64_t* GetSourceLocationZonesCntReal( u_src_idx_t srcloc );
 
     uint64_t* GetGpuSourceLocationZonesCnt( uint16_t srcloc )
     {
         if( m_data.gpuCntLast.first == srcloc ) return m_data.gpuCntLast.second;
         return GetGpuSourceLocationZonesCntReal( srcloc );
     }
-    uint64_t* GetGpuSourceLocationZonesCntReal( uint16_t srcloc );
+    uint64_t* GetGpuSourceLocationZonesCntReal( u_src_idx_t srcloc );
 #endif
 
     tracy_force_inline void NewZone( ZoneEvent* zone );
@@ -902,7 +902,7 @@ private:
     void HandlePostponedGhostZones();
 
     bool IsFailureThreadStringRetrieved();
-    bool IsSourceLocationRetrieved( int16_t srcloc );
+    bool IsSourceLocationRetrieved( src_idx_t srcloc );
     bool IsCallstackRetrieved( uint32_t callstack );
     bool HasAllFailureData();
     void HandleFailure( const char* ptr, const char* end );
@@ -1008,7 +1008,7 @@ private:
     uint32_t m_pendingCallstackId = 0;
     int16_t m_pendingSourceLocationPayload = 0;
     Vector<uint64_t> m_sourceLocationQueue;
-    unordered_flat_map<uint64_t, int16_t> m_sourceLocationShrink;
+    unordered_flat_map<uint64_t, src_idx_t> m_sourceLocationShrink;
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
     unordered_flat_map<uint32_t, FrameData*> m_vsyncFrameMap;
     FrameImagePending m_pendingFrameImageData = {};
