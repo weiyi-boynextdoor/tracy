@@ -244,14 +244,17 @@ void View::DrawStatistics()
                     }
                     if( !filterActive )
                     {
-                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
+                        if (count >= m_statistics_count_filter)
+                        {
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
+                        }
                     }
                     else
                     {
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                         auto file = m_worker.GetString( sl.file );
-                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter( file ) )
+                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter( file ) && count >= m_statistics_count_filter)
                         {
                             srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
                         }
@@ -474,6 +477,12 @@ void View::DrawStatistics()
     {
         m_statisticsFileFilter.Clear();
     }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Min Counts" );
+    ImGui::SameLine();
+    ImGui::InputInt("Min count", &m_statistics_count_filter);
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

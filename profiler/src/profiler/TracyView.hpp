@@ -469,6 +469,7 @@ private:
 
     ImGuiTextFilter m_statisticsNameFilter;
     ImGuiTextFilter m_statisticsFileFilter;
+    int m_statistics_count_filter = 0; // filter call counts >= m_statistics_count_filter
     ImGuiTextFilter m_statisticsImageFilter;
     ImGuiTextFilter m_userTextFilter;
     unordered_flat_set<Worker::ZoneThreadData*> m_filteredZones;
