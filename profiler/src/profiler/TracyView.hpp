@@ -362,12 +362,12 @@ private:
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
     const char* GetThreadContextData( uint64_t thread, bool& local, bool& untracked, const char*& program );
 
-    tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
-    tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
     template<typename Adapter, typename V>
-    void CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime );
+    void CalcZoneTimeDataImpl( const V& children, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime );
     template<typename Adapter, typename V>
-    void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime );
+    void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime );
 
     void SetPlaybackFrame( uint32_t idx );
     bool Save( const char* fn, FileCompression comp, int zlevel, bool buildDict, int streams );
@@ -433,7 +433,7 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<int16_t> m_zoneSrcLocHighlight = 0;
+    DecayValue<src_idx_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     LockHighlight m_nextLockHighlight;
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
@@ -593,8 +593,8 @@ private:
     RangeSlim m_setRangePopup;
     bool m_setRangePopupOpen = false;
 
-    unordered_flat_map<int16_t, StatisticsCache> m_statCache;
-    unordered_flat_map<int16_t, StatisticsCache> m_gpuStatCache;
+    unordered_flat_map<src_idx_t, StatisticsCache> m_statCache;
+    unordered_flat_map<src_idx_t, StatisticsCache> m_gpuStatCache;
 
     unordered_flat_map<const void*, bool> m_visMap;
 
@@ -709,7 +709,7 @@ private:
             samples.scheduleUpdate = true;
         }
 
-        void ShowZone( int16_t srcloc, const char* name )
+        void ShowZone( src_idx_t srcloc, const char* name )
         {
             show = true;
             range.active = false;
@@ -718,7 +718,7 @@ private:
             strcpy( pattern, name );
         }
 
-        void ShowZone( int16_t srcloc, const char* name, int64_t limitMin, int64_t limitMax )
+        void ShowZone( src_idx_t srcloc, const char* name, int64_t limitMin, int64_t limitMax )
         {
             assert( limitMin <= limitMax );
             show = true;
@@ -844,7 +844,7 @@ private:
     struct TimeDistribution {
         bool runningTime = false;
         bool exclusiveTime = true;
-        unordered_flat_map<int16_t, ZoneTimeData> data;
+        unordered_flat_map<src_idx_t, ZoneTimeData> data;
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;
     } m_timeDist;

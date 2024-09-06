@@ -1604,7 +1604,7 @@ void View::DrawFindZone()
             break;
         }
 
-        int16_t changeZone = 0;
+        src_idx_t changeZone = 0;
 
         if( groupBy == FindZone::GroupBy::Callstack )
         {
@@ -1784,7 +1784,7 @@ void View::DrawFindZone()
                     }
                     else
                     {
-                        auto& srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
+                        auto& srcloc = m_worker.GetSourceLocation( src_idx_t( v->first ) );
                         hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                         SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     }
@@ -1807,7 +1807,7 @@ void View::DrawFindZone()
                 }
                 if( m_findZone.groupBy == FindZone::GroupBy::Parent && ImGui::IsItemClicked( 2 ) )
                 {
-                    changeZone = int16_t( v->first );
+                    changeZone = src_idx_t( v->first );
                 }
                 ImGui::PopID();
                 if( isFiber )

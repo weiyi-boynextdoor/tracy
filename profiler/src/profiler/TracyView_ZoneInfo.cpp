@@ -26,7 +26,7 @@ inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& wo
     return ev.callstack.Val();
 }
 
-void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
+void View::CalcZoneTimeData( unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
@@ -41,7 +41,7 @@ void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, in
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime )
+void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -72,7 +72,7 @@ void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, 
     }
 }
 
-void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
+void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
@@ -87,7 +87,7 @@ void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime )
+void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<src_idx_t, ZoneTimeData>& data, int64_t& ztime )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -1037,7 +1037,7 @@ void View::DrawZoneInfoWindow()
                 }
                 if( !m_timeDist.data.empty() )
                 {
-                    std::vector<unordered_flat_map<int16_t, ZoneTimeData>::const_iterator> vec;
+                    std::vector<unordered_flat_map<src_idx_t, ZoneTimeData>::const_iterator> vec;
                     vec.reserve( m_timeDist.data.size() );
                     for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
                     if( ImGui::BeginTable( "##timedist", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) )
