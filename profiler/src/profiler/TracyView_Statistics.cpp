@@ -468,6 +468,7 @@ void View::DrawStatistics()
     }
     ImGui::SameLine();
     ImGui::Spacing();
+    ImGui::SameLine();
     // ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( "File" );
     ImGui::SameLine();
