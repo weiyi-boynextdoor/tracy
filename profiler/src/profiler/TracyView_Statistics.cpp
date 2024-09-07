@@ -242,9 +242,12 @@ void View::DrawStatistics()
                         total = it->second.nonReentrantTotal;
                         break;
                     }
+                    // time filter (ms)
+                    double mtpc = (double) total / count;
+                    int64_t min_total_time = m_statistics_total_time_filter[0] * 3600 * 1000000000LL + m_statistics_total_time_filter[1] * 60 * 1000000000LL + m_statistics_total_time_filter[2] * 1000000000LL + m_statistics_total_time_filter[3] * 1000000LL;
                     if( !filterActive )
                     {
-                        if (count >= m_statistics_count_filter)
+                        if (count >= m_statistics_count_filter && total >= min_total_time && mtpc >= m_statistics_mtpc_filter)
                         {
                             srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
                         }
@@ -254,9 +257,12 @@ void View::DrawStatistics()
                         auto& sl = m_worker.GetSourceLocation( it->first );
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                         auto file = m_worker.GetString( sl.file );
-                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter( file ) && count >= m_statistics_count_filter)
+                        if( m_statisticsNameFilter.PassFilter( name ) && m_statisticsFileFilter.PassFilter( file ))
                         {
-                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
+                            if (count >= m_statistics_count_filter && total >= min_total_time && mtpc >= m_statistics_mtpc_filter)
+                            {
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
+                            }
                         }
                     }
                 }
@@ -483,7 +489,22 @@ void View::DrawStatistics()
     ImGui::SameLine();
     TextDisabledUnformatted( "Min Counts" );
     ImGui::SameLine();
-    ImGui::InputInt("Min count", &m_statistics_count_filter);
+    ImGui::SetNextItemWidth( 200 );
+    ImGui::InputInt("###min_count", &m_statistics_count_filter);
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Total time" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 200 );
+    ImGui::InputInt4("h:min:s:ms###total_time", m_statistics_total_time_filter);
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Mean time per call" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 200 );
+    ImGui::InputFloat("ms###mtpc", &m_statistics_mtpc_filter);
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

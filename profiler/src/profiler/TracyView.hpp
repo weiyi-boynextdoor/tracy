@@ -470,6 +470,9 @@ private:
     ImGuiTextFilter m_statisticsNameFilter;
     ImGuiTextFilter m_statisticsFileFilter;
     int m_statistics_count_filter = 0; // filter call counts >= m_statistics_count_filter
+    // min total time filter: h:min:s:ms
+    int m_statistics_total_time_filter[4]{};
+    float m_statistics_mtpc_filter = 0.0f; // filter mean time per call >= m_statistics_mtpc_filter ms
     ImGuiTextFilter m_statisticsImageFilter;
     ImGuiTextFilter m_userTextFilter;
     unordered_flat_set<Worker::ZoneThreadData*> m_filteredZones;
