@@ -31,4 +31,9 @@ endif()
 
 if(USE_32_BIT_SOURCE_LOCATION)
     target_compile_definitions(TracyServer PUBLIC TRACY_USE_32_BIT_SOURCE_LOCATION)
+    target_compile_definitions(TracyServer PUBLIC TRACY_USE_LONG_TIMELINE)
+endif()
+
+if(USE_LONG_TIMELINE)
+    target_compile_definitions(TracyServer PUBLIC TRACY_USE_LONG_TIMELINE)
 endif()
