@@ -243,7 +243,7 @@ void View::DrawStatistics()
                         break;
                     }
                     // time filter (ms)
-                    double mtpc = (double) total / count;
+                    double mtpc = (double) total / count / 1000000.0;
                     int64_t min_total_time = m_statistics_total_time_filter[0] * 3600 * 1000000000LL + m_statistics_total_time_filter[1] * 60 * 1000000000LL + m_statistics_total_time_filter[2] * 1000000000LL + m_statistics_total_time_filter[3] * 1000000LL;
                     if( !filterActive )
                     {
