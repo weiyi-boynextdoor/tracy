@@ -487,27 +487,6 @@ void View::DrawStatistics()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextDisabledUnformatted( "Min Counts" );
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth( 200 );
-    ImGui::InputInt("###min_count", &m_statistics_count_filter);
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    TextDisabledUnformatted( "Total time" );
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth( 200 );
-    ImGui::InputInt4("h:min:s:ms###total_time", m_statistics_total_time_filter);
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    TextDisabledUnformatted( "Mean time per call" );
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth( 200 );
-    ImGui::InputFloat("ms###mtpc", &m_statistics_mtpc_filter);
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
     if( m_statMode == 1 )
     {
         TextDisabledUnformatted( "Image" );
@@ -587,6 +566,28 @@ void View::DrawStatistics()
             ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         }
     }
+
+    TextDisabledUnformatted( "Min Counts" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 200 );
+    ImGui::InputInt("###min_count", &m_statistics_count_filter);
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Total time" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 80 );
+    ImGui::InputInt4("h:min:s:ms###total_time", m_statistics_total_time_filter);
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Mean time per call" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 200 );
+    ImGui::InputFloat("ms###mtpc", &m_statistics_mtpc_filter);
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
 
     if( m_statMode == 1 )
     {
